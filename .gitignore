@@ -39,7 +39,6 @@ instance/
 .webassets-cache
 .scrapy
 docs/_build/
-target/
 .ipynb_checkpoints
 .python-version
 celerybeat-schedule
@@ -50,3 +49,6 @@ env/
 venv/
 ENV/
 .mypy_cache/
+
+# Rust
+target/

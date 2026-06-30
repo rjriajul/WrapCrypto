@@ -1,0 +1,22 @@
+[package]
+name = "warpcrypto"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "warpcrypto"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = "0.29.0"
+sha2 = "0.10"
+getrandom = "0.2"
+
+[dependencies.aes]
+version = "0.8"
+features = ["zeroize"]
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+strip = "symbols"

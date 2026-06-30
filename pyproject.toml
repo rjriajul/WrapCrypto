@@ -1,13 +1,13 @@
 [build-system]
-requires = ["scikit-build-core"]
-build-backend = "scikit_build_core.build"
+requires = ["maturin>=1.14,<2.0"]
+build-backend = "maturin"
 
 [project]
 name = "WarpCrypto"
-version = "1.2.5"
-description = "Fast and Portable Cryptography Extension Library"
+version = "2.0.0"
+description = "Fast and Portable Cryptography Extension Library (Rust)"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.8"
 authors = [{ name = "Riajul" }]
 license = "LGPL-3.0-or-later"
 license-files = ["COPYING", "COPYING.lesser"]
@@ -15,9 +15,10 @@ classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
-    "Programming Language :: C",
+    "Programming Language :: Rust",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -34,7 +35,7 @@ classifiers = [
 ]
 keywords = [
     "crypto", "cryptography", "encryption", "mtproto",
-    "extension", "library", "aes", "warpcrypto",
+    "rust", "extension", "library", "aes", "warpcrypto",
 ]
 
 [project.urls]
@@ -42,5 +43,3 @@ Homepage = "https://github.com/rjriajul/WarpCrypto"
 Source = "https://github.com/rjriajul/WarpCrypto"
 Tracker = "https://github.com/rjriajul/WarpCrypto/issues"
 
-[tool.scikit-build]
-cmake.version = ">=3.15"
