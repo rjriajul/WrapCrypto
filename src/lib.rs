@@ -235,7 +235,7 @@ fn pack_message(py: Python<'_>, msg_id: i64, seq_no: i32, body: &[u8], salt: i64
 
     Ok(py.detach(move || {
         let body_len = body.len();
-        let inner_len = 8 + 4 + 4 + body_len;
+        let inner_len = 8 + 8 + 8 + 4 + 4 + body_len;
         let total_plain = (inner_len + 12 + 15) & !15;
         let total_out = 24 + total_plain;
         let mut out = vec![0u8; total_out];
