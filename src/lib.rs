@@ -227,16 +227,16 @@ fn kdf(auth_key: &[u8], msg_key: &[u8], outgoing: bool) -> PyResult<(Vec<u8>, Ve
 }
 
 #[pyfunction]
-fn pack_message(py: Python<'_>, data: &[u8], salt: i64, session_id: &[u8], auth_key: &[u8], auth_key_id: &[u8]) -> PyResult<Vec<u8>> {
-    let data = data.to_vec();
+fn pack_message(py: Python<'_>, msg_id: i64, seq_no: i32, body: &[u8], salt: i64, session_id: &[u8], auth_key: &[u8], auth_key_id: &[u8]) -> PyResult<Vec<u8>> {
+    let body = body.to_vec();
     let session_id = session_id.to_vec();
     let auth_key = auth_key.to_vec();
     let auth_key_id = auth_key_id.to_vec();
 
     Ok(py.detach(move || {
-        let data_len = data.len();
-        let len_data = data_len + 16;
-        let total_plain = (len_data + 12 + 15) & !15;
+        let body_len = body.len();
+        let inner_len = 8 + 4 + 4 + body_len;
+        let total_plain = (inner_len + 12 + 15) & !15;
         let total_out = 24 + total_plain;
         let mut out = vec![0u8; total_out];
         let plain = &mut out[24..];
@@ -245,8 +245,14 @@ fn pack_message(py: Python<'_>, data: &[u8], salt: i64, session_id: &[u8], auth_
         salt_slice.copy_from_slice(&(salt as u64).to_le_bytes());
         let (sid, rest) = rest.split_at_mut(8);
         sid.copy_from_slice(&session_id);
-        let (data_slice, padding) = rest.split_at_mut(data_len);
-        data_slice.copy_from_slice(&data);
+        let (mid, rest) = rest.split_at_mut(8);
+        mid.copy_from_slice(&(msg_id as u64).to_le_bytes());
+        let (sn, rest) = rest.split_at_mut(4);
+        sn.copy_from_slice(&(seq_no as u32).to_le_bytes());
+        let (lenb, rest) = rest.split_at_mut(4);
+        lenb.copy_from_slice(&(body_len as u32).to_le_bytes());
+        let (data_slice, padding) = rest.split_at_mut(body_len);
+        data_slice.copy_from_slice(&body);
         let _ = getrandom::getrandom(padding);
 
         let msg_key_large = {
@@ -268,7 +274,7 @@ fn pack_message(py: Python<'_>, data: &[u8], salt: i64, session_id: &[u8], auth_
 }
 
 #[pyfunction]
-fn unpack_message(py: Python<'_>, packed: &[u8], session_id: &[u8], auth_key: &[u8], auth_key_id: &[u8]) -> PyResult<Vec<u8>> {
+fn unpack_message(py: Python<'_>, packed: &[u8], session_id: &[u8], auth_key: &[u8], auth_key_id: &[u8]) -> PyResult<(i64, i32, i32, Vec<u8>, i32)> {
     if packed.len() < 24 {
         return Err(PyValueError::new_err("packed data too short"));
     }
@@ -278,7 +284,6 @@ fn unpack_message(py: Python<'_>, packed: &[u8], session_id: &[u8], auth_key: &[
     let packed = packed.to_vec();
     let session_id = session_id.to_vec();
     let auth_key = auth_key.to_vec();
-    let _auth_key_id = auth_key_id.to_vec();
 
     py.detach(move || {
         let msg_key = &packed[8..24];
@@ -295,8 +300,12 @@ fn unpack_message(py: Python<'_>, packed: &[u8], session_id: &[u8], auth_key: &[
         if &dec[8..16] != &session_id[..] {
             return Err(PyValueError::new_err("session_id mismatch"));
         }
-        dec.drain(..16);
-        Ok(dec)
+        let msg_id = i64::from_le_bytes(dec[16..24].try_into().unwrap());
+        let seq_no = i32::from_le_bytes(dec[24..28].try_into().unwrap());
+        let length = i32::from_le_bytes(dec[28..32].try_into().unwrap()) as usize;
+        let body = dec[32..32 + length].to_vec();
+        let total_len = dec[16..].len() as i32;
+        Ok((msg_id, seq_no, length as i32, body, total_len))
     })
 }
 
